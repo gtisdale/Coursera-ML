@@ -1,0 +1,277 @@
+---
+title: "Human Activity Analysis"
+author: "Glenn Tisdale"
+date: "Thursday, December 21, 2014"
+output: html_document
+---
+
+### Executive Summary
+In this discussion I present the development of a random forest model for predicting Human Activity based on acceleromter data.  The final model has an accuracy better than 96%.
+
+### Set up the Environment
+The first step that I take is install any packages that are required, clear the evironment of old objects and then load the libraries from the required packages.  Note that the package install lines are commented out since the packages have been loaded but they have been retainted for reference.
+
+```{r}
+#install.packages("ada")
+#install.packages("gbm")
+#install.packages("caret")
+#install.packages("plyr")
+#install.packages("randomForest")
+#update.packages(checkBuilt=TRUE)
+rm(list=ls())
+setwd("C:/Google Drive/71) Education/43) Coursera/Data Science - Johns Hopkins University/08 Practical Machine Learning/Project")
+library(caret)
+library(ada)
+library(gbm)
+library(plyr)
+library(randomForest)
+```
+
+### Load the Data
+The next step that I take is to load the raw training data files from the working directory and then set then rename the index columns with a simple index name.
+
+```{r}
+training.raw <- read.csv("pml-training.csv")
+names(training.raw)[1] <- "index"
+testing.raw <- read.csv("pml-testing.csv")
+names(testing.raw)[1] <- "index"
+```
+
+### Clean the data
+These particular data sets have numerous columns which that do not contain viable data.  In many cases these columns are primarily empty or contain NA elements.  The most direct way to do this is to examine the data with a spreadsheet (in this case Excel) and then select only those colunmns which contain data that is useful for the analysis.  After loading the data, I run a check to insure that all NA elements have been elminated.  The lines for this check have been commented out but are retained for reference.
+
+```{r}
+cols <- c(160, 8:11, 37:49, 60:68, 84:86, 113:124, 151:159)
+training.select <- training.raw[,cols]
+testing.select <- testing.raw[,cols]
+#which(is.na(training))
+#which(is.na(testing))
+```
+
+### Create Inital Models
+
+The first analysis step that I take is to run a set of different algorithms on the data set to determine which type of algorithm will be the most useful.
+
+#### Create Test and Training Sets
+To enable the algorithms to be tested and cross validated, I divide the inital data into training and testing data - training received 75% and testing receives 25%.
+
+```{r}
+set.seed(100)
+inTrain <- createDataPartition(y=training.select$classe, p=.75, list=FALSE) 
+training <- training.select[inTrain,]
+testing <- training.select[-inTrain,]
+```
+
+
+#### Create Mini Test and Training Sets
+For this particular data set, there is so much data that running algorithms such as random forests will take a great deal of running time.  Therefore I create abbreviated versions of the data sets which have a random selection of 10 percent of the training data and 10 percent of the test data.
+
+```{r}
+training.idx <- which(!is.na(training$classe))
+testing.idx <- which(!is.na(testing$classe))
+in.mini.training <- sample(training.idx, size = ceiling(length(training.idx)/10))
+in.mini.testing <- sample(testing.idx, size = ceiling(length(testing.idx)/10))
+mini.training <- training[in.mini.training,]
+mini.testing <- testing[in.mini.testing,]
+```
+
+#### Run Candidate Algorithms
+To understand the performance of a variety of algorithms I run a simple tree model, a random forests model and a boosted trees model.  For each model I generate a confusion matrix and a variable importance list.
+
+What can quickly be seen from the models below is that a simple tree model generates better than random performance, but it looks like it could be improved upon.  The random forest model by contrast generates a higher quality model with accuracy approximately 92%.  The boosted tree model is almost as good as the random forest model with an accuracy of 89%
+
+Note that for the random forest model and the boosted tree model, I have cached models from previous runs and have reloaded these models to eliminate the running time for each.  The commented lines have been retained for reference. 
+
+##### Simple Tree
+```{r}
+modFit <- train(classe ~ .,method = "rpart", data=mini.training)
+print(modFit$finalModel)
+pred <- predict(modFit, newdata=mini.testing)
+confusionMatrix(pred,mini.testing$classe)
+varImp(modFit)
+```
+
+##### Random Forest
+```{r}
+#modFit.all.rf.mini <- train(classe ~ .,method = "rf", data=mini.training, prox=TRUE)
+#save(modFit.all.rf.mini,file="modFit_all_rf_mini")
+load("modFit_all_rf_mini")
+pred <- predict(modFit.all.rf.mini, newdata=mini.testing)
+confusionMatrix(pred,mini.testing$classe)
+varImp(modFit.all.rf.mini)
+```
+
+##### Boosted Tree
+```{r}
+#modFit.all.gbm.mini <- train(classe ~ .,method = "gbm", data=mini.training, verbose=FALSE)
+#save(modFit.all.gbm.mini,file="modFit_all_gbm_mini")
+load("modFit_all_gbm_mini")
+pred <- predict(modFit.all.gbm.mini, newdata=mini.testing)
+confusionMatrix(pred,mini.testing$classe)
+varImp(modFit.all.gbm.mini)
+```
+
+#### Make predictions from the test data.
+Finally I make a set of predictions from the random forest model agains the full set of testing data.
+
+```{r}
+pred <- predict(modFit.all.rf.mini, newdata=testing.select)
+pred
+```
+
+This completes the inital algorithm evaluation.  Now the goal will be to improve the random forest algorithm, which the above suggests as the most useful candidate.
+
+
+### Create Variables Feature Plots
+The first step to improving the algorithm is to use the subset of the 20 most influential variables to create scatter matrix plots of each subset of 5.  These do not reveal any noteworthy patterns.  To save computational space I am using the mini data sets as the source data.
+
+```{r}
+featurePlot(x=mini.training[,c("roll_belt", "pitch_forearm","magnet_dumbbell_z","yaw_belt", "magnet_dumbbell_y")],y=mini.training$classe,plot="pairs")
+featurePlot(x=mini.training[,c("pitch_belt","roll_forearm","magnet_dumbbell_x","accel_dumbbell_y","gyros_dumbbell_y")],y=mini.training$classe,plot="pairs")
+featurePlot(x=mini.training[,c("accel_forearm_x", "roll_dumbbell","accel_dumbbell_z","accel_belt_z","magnet_belt_z")],y=mini.training$classe,plot="pairs")
+featurePlot(x=mini.training[,c("magnet_forearm_z", "gyros_belt_z","magnet_belt_y","roll_arm","magnet_forearm_x")],y=mini.training$classe,plot="pairs")
+```
+
+### Create Models using the Top 20 most influential variables
+To improve the model accuracy I will retrict the model to the top 20 variables form the anlysis above to see how this improves performance.  The code below repeats uses only the top 20 variables from the data set and repeats the analysis above.  Note that we are again using the mini-data set to save computation time.  We are also caching the models when complete and pulling the cached models to generate this document.
+
+The result is that restricting the variable set improves performance to an accuacy close to 93%.
+
+##### Create subset of 20 most important variables
+```{r}
+top.values <- c("classe","roll_belt", "pitch_forearm","magnet_dumbbell_z","yaw_belt", "magnet_dumbbell_y",
+           "pitch_belt", "roll_forearm","magnet_dumbbell_x","accel_dumbbell_y","gyros_dumbbell_y",
+           "accel_forearm_x","roll_dumbbell","accel_dumbbell_z","accel_belt_z","magnet_belt_z",
+           "magnet_forearm_z","gyros_belt_z","magnet_belt_y","roll_arm","magnet_forearm_x"
+            )
+training.select <- training.raw[,top.values]
+```
+
+##### Create Test and Training Sets
+```{r}
+inTrain <- createDataPartition(y=training.select$classe, p=.75, list=FALSE) 
+training <- training.select[inTrain,]
+testing <- training.select[-inTrain,]
+```
+
+##### Create Mini Test and Training Sets
+```{r}
+training.idx <- which(!is.na(training$classe))
+testing.idx <- which(!is.na(testing$classe))
+in.mini.training <- sample(training.idx, size = ceiling(length(training.idx)/10))
+in.mini.testing <- sample(testing.idx, size = ceiling(length(testing.idx)/10))
+mini.training <- training[in.mini.training,]
+mini.testing <- testing[in.mini.testing,]
+```
+
+##### Create Model
+```{r}
+#modFit.20.rf.mini <- train(classe ~ .,method = "rf", data=mini.training, prox=TRUE)
+#save(modFit.20.rf.mini,file="modFit_20_rf_mini")
+load("modFit_20_rf_mini")
+pred <- predict(modFit.20.rf.mini, newdata=mini.testing)
+confusionMatrix(pred,mini.testing$classe)
+varImp(modFit.20.rf.mini)
+```
+
+##### Make Predictions
+```{r}
+pred <- predict(modFit.20.rf.mini, newdata=testing.select)
+pred
+```
+
+### Create Models Using the top 10 most influential variables
+We further restrict the variable set to determine if this will improve performance.  The upshot is that it does not, so we take the 20 variable set to be the working variable set.
+
+##### Select subset of 10 most important variables
+```{r}
+top.values <- c("classe","roll_belt", "pitch_forearm","magnet_dumbbell_z","yaw_belt", "magnet_dumbbell_y",
+           "pitch_belt", "roll_forearm","magnet_dumbbell_x","accel_dumbbell_y","gyros_dumbbell_y"
+            )
+training.select <- training.raw[,top.values]
+```
+
+##### Create Training and Test Sets
+```{r}
+inTrain <- createDataPartition(y=training.select$classe, p=.75, list=FALSE) 
+training <- training.select[inTrain,]
+testing <- training.select[-inTrain,]
+```
+
+##### Create Mini Training and Test Sets
+```{r}
+training.idx <- which(!is.na(training$classe))
+testing.idx <- which(!is.na(testing$classe))
+in.mini.training <- sample(training.idx, size = ceiling(length(training.idx)/10))
+in.mini.testing <- sample(testing.idx, size = ceiling(length(testing.idx)/10))
+mini.training <- training[in.mini.training,]
+mini.testing <- testing[in.mini.testing,]
+```
+
+##### Create Model
+```{r}
+#modFit.10.rf.mini <- train(classe ~ .,method = "rf", data=mini.training, prox=TRUE)
+#save(modFit.10.rf.mini,file="modFit_10_rf_mini")
+load("modFit_10_rf_mini")
+pred <- predict(modFit.10.rf.mini, newdata=mini.testing)
+confusionMatrix(pred,mini.testing$classe)
+varImp(modFit.10.rf.mini)
+```
+
+##### Make Predictions
+```{r}
+pred <- predict(modFit.10.rf.mini, newdata=testing.select)
+pred
+```
+
+### Increase Data Analyzed to 20% Using the 20 Variable Model to Create Final Data Set
+To futher improve the accuracy of the model we expand the size of the data set.  The data sets above use the mini data set which includes 10% of the data.  In the analysis below we use 20% of the original data for testing and training.  This improves the accuracy to approximately 97%.
+
+Note that for random forests, the running time makes using the complete data set time prohibitive.
+
+#####Select Top 20 Variables
+```{r}
+top.values <- c("classe","roll_belt", "pitch_forearm","magnet_dumbbell_z","yaw_belt", "magnet_dumbbell_y",
+           "pitch_belt", "roll_forearm","magnet_dumbbell_x","accel_dumbbell_y","gyros_dumbbell_y",
+           "accel_forearm_x","roll_dumbbell","accel_dumbbell_z","accel_belt_z","magnet_belt_z",
+           "magnet_forearm_z","gyros_belt_z","magnet_belt_y","roll_arm","magnet_forearm_x"
+            )
+training.select <- training.raw[,top.values]
+```
+
+##### Create Test and Training Sets
+```{r}
+inTrain <- createDataPartition(y=training.select$classe, p=.75, list=FALSE) 
+training <- training.select[inTrain,]
+testing <- training.select[-inTrain,]
+```
+
+##### Create Mini Test and Training Sets with 20% of the data
+```{r}
+training.idx <- which(!is.na(training$classe))
+testing.idx <- which(!is.na(testing$classe))
+in.mini.training <- sample(training.idx, size = ceiling(length(training.idx)/1))
+in.mini.testing <- sample(testing.idx, size = ceiling(length(testing.idx)/1))
+mini.training <- training[in.mini.training,]
+mini.testing <- testing[in.mini.testing,]
+```
+
+##### Create Model
+```{r}
+#modFit.20.rf.full <- train(classe ~ .,method = "rf", data=mini.training, prox=TRUE)
+#save(modFit.20.rf.full,file="modFit_20_rf_full")
+load("modFit_20_rf_full")
+pred <- predict(modFit.20.rf.full, newdata=mini.testing)
+confusionMatrix(pred,mini.testing$classe)
+varImp(modFit.20.rf.full)
+```
+
+### Make Predicitions Using Final Data Set to Create Final Predictions
+To create the final predictions we use the final model and apply this to the test data.
+
+```{r}
+pred <- predict(modFit.20.rf.full, newdata=testing.select)
+pred
+```
+
+
