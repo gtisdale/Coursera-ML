@@ -60,7 +60,12 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 
 <div id="executive-summary" class="section level3">
 <h3>Executive Summary</h3>
-<p>In this discussion I present the development of a random forest model for predicting Human Activity based on acceleromter data. The final model has an accuracy better than 96%.</p>
+<p>In this discussion I present the development of a random forest model for predicting Human Activity based on acceleromter data. The final model has an accuracy better than 97%.</p>
+<p>The algorithm was developed using by creating intial test algorithms on a 75%-25% training-test data split. Then three different algorithms - simple tree, random forest and boosted trees - were tried to determine which algorithm was most applicable and which variables were most significant.</p>
+<p>Then a model was created which used the top 20 variables and the top 10 variables against a test set that consisted of 10% of the data. This was used to select a compact feature set.</p>
+<p>Finally the 20 variable feature set was applied to a random set of 20% of the original data to create a predictive model. This choice was made to make the running time for the model tractable.</p>
+<p>The final predicted values are:</p>
+<p>A A B A A E D B A A B C B A E E A B A B</p>
 </div>
 <div id="set-up-the-environment" class="section level3">
 <h3>Set up the Environment</h3>
