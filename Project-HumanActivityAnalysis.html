@@ -60,12 +60,12 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 
 <div id="executive-summary" class="section level3">
 <h3>Executive Summary</h3>
-<p>In this discussion I present the development of a random forest model for predicting Human Activity based on acceleromter data. The final model has an accuracy better than 97%.</p>
-<p>The algorithm was developed using by creating intial test algorithms on a 75%-25% training-test data split. Then three different algorithms - simple tree, random forest and boosted trees - were tried to determine which algorithm was most applicable and which variables were most significant.</p>
+<p>In this discussion I present the development of a random forest model for predicting Human Activity based on acceleromter data. The final model has an accuracy of approximately 98.5%.</p>
+<p>The algorithm was developed by creating intial test algorithms on a 75%-25% training-test data split. Then three different algorithms - simple tree, random forest and boosted trees - were tried to determine which algorithm was most applicable and which variables were most significant.</p>
 <p>Then a model was created which used the top 20 variables and the top 10 variables against a test set that consisted of 10% of the data. This was used to select a compact feature set.</p>
-<p>Finally the 20 variable feature set was applied to a random set of 20% of the original data to create a predictive model. This choice was made to make the running time for the model tractable.</p>
+<p>Finally the 20 variable feature set was applied to a random set of 50% of the original data to create a predictive model. This choice was made to make the running time for the model tractable.</p>
 <p>The final predicted values are:</p>
-<p>A A B A A E D B A A B C B A E E A B A B</p>
+<p>B A B A A E D B A A B C B A E E A B B B</p>
 </div>
 <div id="set-up-the-environment" class="section level3">
 <h3>Set up the Environment</h3>
@@ -569,9 +569,9 @@ pred</code></pre>
 ## Levels: A B C D E</code></pre>
 </div>
 </div>
-<div id="increase-data-analyzed-to-20-using-the-20-variable-model-to-create-final-data-set" class="section level3">
-<h3>Increase Data Analyzed to 20% Using the 20 Variable Model to Create Final Data Set</h3>
-<p>To futher improve the accuracy of the model we expand the size of the data set. The data sets above use the mini data set which includes 10% of the data. In the analysis below we use 20% of the original data for testing and training. This improves the accuracy to approximately 97%.</p>
+<div id="increase-data-analyzed-to-50-using-the-20-variable-model-to-create-final-model" class="section level3">
+<h3>Increase Data Analyzed to 50% Using the 20 Variable Model to Create Final Model</h3>
+<p>To futher improve the accuracy of the model we expand the size of the data set. The data sets above use the mini data set which includes 10% of the data. In the analysis below we use 50% of the original data for testing and training. This improves the accuracy to approximately 98.5%.</p>
 <p>Note that for random forests, the running time makes using the complete data set time prohibitive.</p>
 <div id="select-top-20-variables" class="section level5">
 <h5>Select Top 20 Variables</h5>
@@ -592,73 +592,73 @@ testing &lt;- training.select[-inTrain,]</code></pre>
 <h5>Create Mini Test and Training Sets with 20% of the data</h5>
 <pre class="r"><code>training.idx &lt;- which(!is.na(training$classe))
 testing.idx &lt;- which(!is.na(testing$classe))
-in.mini.training &lt;- sample(training.idx, size = ceiling(length(training.idx)/1))
-in.mini.testing &lt;- sample(testing.idx, size = ceiling(length(testing.idx)/1))
+in.mini.training &lt;- sample(training.idx, size = ceiling(length(training.idx)/2))
+in.mini.testing &lt;- sample(testing.idx, size = ceiling(length(testing.idx)/2))
 mini.training &lt;- training[in.mini.training,]
 mini.testing &lt;- testing[in.mini.testing,]</code></pre>
 </div>
 <div id="create-model-2" class="section level5">
 <h5>Create Model</h5>
 <pre class="r"><code>#modFit.20.rf.full &lt;- train(classe ~ .,method = &quot;rf&quot;, data=mini.training, prox=TRUE)
-#save(modFit.20.rf.full,file=&quot;modFit_20_rf_full&quot;)
-load(&quot;modFit_20_rf_full&quot;)
+#save(modFit.20.rf.full,file=&quot;modFit_20_rf_full_a&quot;)
+load(&quot;modFit_20_rf_full_a&quot;)
 pred &lt;- predict(modFit.20.rf.full, newdata=mini.testing)
 confusionMatrix(pred,mini.testing$classe)</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
-## Prediction    A    B    C    D    E
-##          A 1389   31    0    6    2
-##          B    2  898   35    0    6
-##          C    2   16  806   17    7
-##          D    2    4   14  780    9
-##          E    0    0    0    1  877
+## Prediction   A   B   C   D   E
+##          A 677   5   0   0   0
+##          B   0 483   3   0   0
+##          C   0   6 422   8   0
+##          D   1   0   0 397   3
+##          E   0   0   2   1 444
 ## 
 ## Overall Statistics
 ##                                         
-##                Accuracy : 0.969         
-##                  95% CI : (0.963, 0.973)
-##     No Information Rate : 0.284         
-##     P-Value [Acc &gt; NIR] : &lt; 2e-16       
+##                Accuracy : 0.988         
+##                  95% CI : (0.983, 0.992)
+##     No Information Rate : 0.277         
+##     P-Value [Acc &gt; NIR] : &lt;2e-16        
 ##                                         
-##                   Kappa : 0.96          
-##  Mcnemar's Test P-Value : 1.35e-09      
+##                   Kappa : 0.985         
+##  Mcnemar's Test P-Value : NA            
 ## 
 ## Statistics by Class:
 ## 
 ##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity             0.996    0.946    0.943    0.970    0.973
-## Specificity             0.989    0.989    0.990    0.993    1.000
-## Pos Pred Value          0.973    0.954    0.950    0.964    0.999
-## Neg Pred Value          0.998    0.987    0.988    0.994    0.994
-## Prevalence              0.284    0.194    0.174    0.164    0.184
-## Detection Rate          0.283    0.183    0.164    0.159    0.179
-## Detection Prevalence    0.291    0.192    0.173    0.165    0.179
-## Balanced Accuracy       0.992    0.968    0.966    0.982    0.987</code></pre>
+## Sensitivity             0.999    0.978    0.988    0.978    0.993
+## Specificity             0.997    0.998    0.993    0.998    0.999
+## Pos Pred Value          0.993    0.994    0.968    0.990    0.993
+## Neg Pred Value          0.999    0.994    0.998    0.996    0.999
+## Prevalence              0.277    0.201    0.174    0.166    0.182
+## Detection Rate          0.276    0.197    0.172    0.162    0.181
+## Detection Prevalence    0.278    0.198    0.178    0.164    0.182
+## Balanced Accuracy       0.998    0.988    0.991    0.988    0.996</code></pre>
 <pre class="r"><code>varImp(modFit.20.rf.full)</code></pre>
 <pre><code>## rf variable importance
 ## 
 ##                   Overall
 ## roll_belt          100.00
-## yaw_belt            70.51
-## magnet_dumbbell_z   65.65
-## pitch_forearm       64.71
-## magnet_dumbbell_y   55.46
-## pitch_belt          51.19
-## roll_forearm        34.43
-## magnet_dumbbell_x   33.53
-## magnet_belt_z       31.64
-## roll_dumbbell       27.42
-## accel_dumbbell_y    27.31
-## magnet_belt_y       23.15
-## accel_dumbbell_z    17.70
-## accel_belt_z        15.40
-## accel_forearm_x     13.88
-## roll_arm            13.04
-## gyros_belt_z        10.05
-## magnet_forearm_z     6.57
-## magnet_forearm_x     2.77
-## gyros_dumbbell_y     0.00</code></pre>
+## yaw_belt            66.58
+## magnet_dumbbell_z   59.45
+## pitch_forearm       55.05
+## magnet_dumbbell_y   50.22
+## pitch_belt          50.06
+## roll_forearm        34.73
+## magnet_dumbbell_x   34.69
+## accel_dumbbell_y    25.03
+## roll_dumbbell       24.30
+## accel_belt_z        24.17
+## magnet_belt_z       23.46
+## magnet_belt_y       19.88
+## accel_dumbbell_z    19.51
+## accel_forearm_x     15.14
+## roll_arm            12.83
+## magnet_forearm_z    11.15
+## gyros_belt_z         8.08
+## gyros_dumbbell_y     3.20
+## magnet_forearm_x     0.00</code></pre>
 </div>
 </div>
 <div id="make-predicitions-using-final-data-set-to-create-final-predictions" class="section level3">
@@ -666,7 +666,7 @@ confusionMatrix(pred,mini.testing$classe)</code></pre>
 <p>To create the final predictions we use the final model and apply this to the test data.</p>
 <pre class="r"><code>pred &lt;- predict(modFit.20.rf.full, newdata=testing.select)
 pred</code></pre>
-<pre><code>##  [1] A A B A A E D B A A B C B A E E A B A B
+<pre><code>##  [1] B A B A A E D B A A B C B A E E A B B B
 ## Levels: A B C D E</code></pre>
 </div>
 

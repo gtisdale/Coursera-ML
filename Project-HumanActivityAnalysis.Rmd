@@ -6,17 +6,17 @@ output: html_document
 ---
 
 ### Executive Summary
-In this discussion I present the development of a random forest model for predicting Human Activity based on acceleromter data.  The final model has an accuracy better than 97%.
+In this discussion I present the development of a random forest model for predicting Human Activity based on acceleromter data.  The final model has an accuracy of approximately 98.5%.
 
-The algorithm was developed using by creating intial test algorithms on a 75%-25% training-test data split.  Then three different algorithms - simple tree, random forest and boosted trees - were tried to determine which algorithm was most applicable and which variables were most significant. 
+The algorithm was developed by creating intial test algorithms on a 75%-25% training-test data split.  Then three different algorithms - simple tree, random forest and boosted trees - were tried to determine which algorithm was most applicable and which variables were most significant. 
 
 Then a model was created which used the top 20 variables and the top 10 variables against a test set that consisted of 10% of the data.  This was used to select a compact feature set.
 
-Finally the 20 variable feature set was applied to a random set of 20% of the original data to create a predictive model.  This choice was made to make the running time for the model tractable.
+Finally the 20 variable feature set was applied to a random set of 50% of the original data to create a predictive model.  This choice was made to make the running time for the model tractable.
 
 The final predicted values are:
 
-A A B A A E D B A A B C B A E E A B A B
+B A B A A E D B A A B C B A E E A B B B
 
 ### Set up the Environment
 The first step that I take is install any packages that are required, clear the evironment of old objects and then load the libraries from the required packages.  Note that the package install lines are commented out since the packages have been loaded but they have been retainted for reference.
@@ -234,8 +234,8 @@ pred <- predict(modFit.10.rf.mini, newdata=testing.select)
 pred
 ```
 
-### Increase Data Analyzed to 20% Using the 20 Variable Model to Create Final Data Set
-To futher improve the accuracy of the model we expand the size of the data set.  The data sets above use the mini data set which includes 10% of the data.  In the analysis below we use 20% of the original data for testing and training.  This improves the accuracy to approximately 97%.
+### Increase Data Analyzed to 50% Using the 20 Variable Model to Create Final Model
+To futher improve the accuracy of the model we expand the size of the data set.  The data sets above use the mini data set which includes 10% of the data.  In the analysis below we use 50% of the original data for testing and training.  This improves the accuracy to approximately 98.5%.
 
 Note that for random forests, the running time makes using the complete data set time prohibitive.
 
@@ -260,8 +260,8 @@ testing <- training.select[-inTrain,]
 ```{r}
 training.idx <- which(!is.na(training$classe))
 testing.idx <- which(!is.na(testing$classe))
-in.mini.training <- sample(training.idx, size = ceiling(length(training.idx)/1))
-in.mini.testing <- sample(testing.idx, size = ceiling(length(testing.idx)/1))
+in.mini.training <- sample(training.idx, size = ceiling(length(training.idx)/2))
+in.mini.testing <- sample(testing.idx, size = ceiling(length(testing.idx)/2))
 mini.training <- training[in.mini.training,]
 mini.testing <- testing[in.mini.testing,]
 ```
@@ -269,8 +269,8 @@ mini.testing <- testing[in.mini.testing,]
 ##### Create Model
 ```{r}
 #modFit.20.rf.full <- train(classe ~ .,method = "rf", data=mini.training, prox=TRUE)
-#save(modFit.20.rf.full,file="modFit_20_rf_full")
-load("modFit_20_rf_full")
+#save(modFit.20.rf.full,file="modFit_20_rf_full_a")
+load("modFit_20_rf_full_a")
 pred <- predict(modFit.20.rf.full, newdata=mini.testing)
 confusionMatrix(pred,mini.testing$classe)
 varImp(modFit.20.rf.full)
